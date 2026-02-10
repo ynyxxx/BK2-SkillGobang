@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "gobang-ai": {
+      "command": "node",
+      "args": [
+        "C:/Users/25219/Downloads/BK2-SkillGobang/backend/dist/mcp/gobangMCP.js"
+      ],
+      "env": {
+        "NODE_ENV": "production"
+      }
+    }
+  }
+}

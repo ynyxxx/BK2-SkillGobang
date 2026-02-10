@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "gobang-ai": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "tsx",
+        "C:/Users/25219/Downloads/BK2-SkillGobang/backend/src/mcp/gobangMCP.ts"
+      ],
+      "env": {
+        "NODE_ENV": "development"
+      }
+    }
+  }
+}
