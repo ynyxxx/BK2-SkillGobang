@@ -2,6 +2,8 @@
 
 import React from 'react';
 import { Skill, SkillType } from '../types/game';
+import { useI18n } from './I18nProvider';
+import { getSkillDescription, getSkillName } from '../lib/i18n';
 
 interface SkillCardProps {
   skill: Skill;
@@ -38,10 +40,13 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export default function SkillCard({ skill, playerEnergy, isMyTurn, isSelected, onSelect }: SkillCardProps) {
+  const { locale, t } = useI18n();
   const canAfford = playerEnergy >= skill.energyCost;
   const isReady = canAfford && isMyTurn;
   const category = SKILL_CATEGORY[skill.type];
   const categoryColor = CATEGORY_COLORS[category] || 'text-slate-400 bg-slate-800 border-slate-600';
+  const translatedName = getSkillName(locale, skill.type);
+  const translatedDescription = getSkillDescription(locale, skill.type);
 
   return (
     <button
@@ -61,24 +66,24 @@ export default function SkillCard({ skill, playerEnergy, isMyTurn, isSelected, o
         <span className="text-lg shrink-0 mt-0.5">{SKILL_ICONS[skill.type]}</span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-sm font-semibold text-slate-100 truncate">{skill.name}</span>
+            <span className="text-sm font-semibold text-slate-100 truncate">{translatedName}</span>
             <div className="flex items-center gap-1 shrink-0">
               <span className={`text-xs px-1.5 py-0.5 rounded border ${CATEGORY_COLORS[category]}`}>
                 {category}
               </span>
             </div>
           </div>
-          <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">{skill.description}</p>
+          <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">{translatedDescription}</p>
           <div className="flex items-center justify-between mt-1.5">
             <span className={`text-xs font-medium ${canAfford ? 'text-blue-300' : 'text-red-400'}`}>
-              消耗 {skill.energyCost} 能量
+              {t('skill.cost', { energy: skill.energyCost })}
             </span>
             {isReady && (
-              <span className="text-xs text-green-400 font-medium">可用</span>
+              <span className="text-xs text-green-400 font-medium">{t('skill.available')}</span>
             )}
             {!canAfford && (
               <span className="text-xs text-slate-500">
-                差 {skill.energyCost - playerEnergy} 点
+                {t('skill.missingEnergy', { value: skill.energyCost - playerEnergy })}
               </span>
             )}
           </div>

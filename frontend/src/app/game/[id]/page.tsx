@@ -6,10 +6,14 @@ import Board from '../../../components/Board';
 import SkillDeck from '../../../components/SkillDeck';
 import EnergyBar from '../../../components/EnergyBar';
 import GameInfo from '../../../components/GameInfo';
+import LanguageToggle from '../../../components/LanguageToggle';
+import { useI18n } from '../../../components/I18nProvider';
 import { useGame } from '../../../hooks/useGame';
 import { Skill, SkillType, Position, PieceType } from '../../../types/game';
+import { getSkillName } from '../../../lib/i18n';
 
 export default function GamePage() {
+  const { t, locale } = useI18n();
   const params = useParams();
   const searchParams = useSearchParams();
   const gameId = params.id as string;
@@ -75,7 +79,7 @@ export default function GamePage() {
         <div className="text-center space-y-4">
           <div className="w-12 h-12 rounded-full border-2 border-blue-400 border-t-transparent animate-spin mx-auto" />
           <p className="text-slate-400">
-            {isConnected ? '加载游戏中...' : '连接服务器中...'}
+            {isConnected ? t('game.loadingGame') : t('game.connectingServer')}
           </p>
         </div>
       </div>
@@ -95,10 +99,10 @@ export default function GamePage() {
       {/* 顶部导航 */}
       <header className="flex items-center justify-between px-4 py-3 border-b border-slate-800/50 bg-slate-900/50 backdrop-blur">
         <div className="flex items-center gap-3">
-          <a href="/" className="text-slate-400 hover:text-slate-200 text-sm">← 首页</a>
+          <a href="/" className="text-slate-400 hover:text-slate-200 text-sm">← {t('common.home')}</a>
           <span className="text-slate-700">|</span>
           <span className="text-xs text-slate-500 font-mono uppercase">
-            {gameState.mode === 'pvp' ? '人人对战' : gameState.mode === 'pva' ? '人机对战' : '机机对战'}
+            {gameState.mode === 'pvp' ? t('mode.pvp') : gameState.mode === 'pva' ? t('mode.pva') : t('mode.ava')}
           </span>
           {/* PvP 模式显示当前操作方 */}
           {isPvP && gameState.status === 'playing' && (
@@ -107,14 +111,15 @@ export default function GamePage() {
                 ? 'bg-slate-700 text-slate-200'
                 : 'bg-white/10 text-white'
             }`}>
-              {gameState.players[gameState.currentTurn].name} 的回合
+              {t('game.turnOf', { name: gameState.players[gameState.currentTurn].name })}
             </span>
           )}
         </div>
 
         <div className="flex items-center gap-2">
+          <LanguageToggle />
           <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-red-400'}`} />
-          <span className="text-xs text-slate-500">{isConnected ? '已连接' : '连接中...'}</span>
+          <span className="text-xs text-slate-500">{isConnected ? t('common.connected') : t('common.connecting')}</span>
         </div>
       </header>
 
@@ -155,7 +160,7 @@ export default function GamePage() {
             {isAIThinking && (
               <div className="flex items-center gap-2 text-sm text-blue-300 bg-blue-900/20 px-4 py-2 rounded-lg border border-blue-700/30">
                 <div className="w-4 h-4 rounded-full border-2 border-blue-400 border-t-transparent animate-spin" />
-                AI 正在思考...
+                {t('game.aiThinking')}
               </div>
             )}
 
@@ -163,7 +168,7 @@ export default function GamePage() {
             {selectedSkill && (
               <div className="flex items-center gap-2 text-sm text-purple-300 bg-purple-900/20 px-4 py-2 rounded-lg border border-purple-700/30 animate-fade-in">
                 <span>⚡</span>
-                <span>已选择 <strong>{selectedSkill.name}</strong> — {selectedSkill.requiresTarget ? '点击棋盘选择目标' : '点击确认使用'}</span>
+                <span>{t('game.selectedSkill', { skill: getSkillName(locale, selectedSkill.type) })} — {selectedSkill.requiresTarget ? t('game.selectTarget') : t('game.clickToConfirm')}</span>
                 <button onClick={() => setSelectedSkill(null)} className="ml-auto text-slate-400 hover:text-white">✕</button>
               </div>
             )}
@@ -181,15 +186,15 @@ export default function GamePage() {
             <div className="text-xs text-slate-500 text-center">
               {isMyTurn
                 ? selectedSkill
-                  ? selectedSkill.requiresTarget ? '点击棋盘上的目标位置' : ''
+                  ? selectedSkill.requiresTarget ? t('game.clickTargetOnBoard') : ''
                   : isPvP
-                    ? `${myPlayer.name} 落子，或在右侧选择技能`
-                    : '点击棋盘落子，或在右侧选择技能'
+                    ? t('game.placeOrSkillPvp', { name: myPlayer.name })
+                    : t('game.placeOrSkill')
                 : isAIThinking
-                  ? 'AI 正在分析棋局...'
+                  ? t('game.aiAnalyzing')
                   : isPvP
-                    ? `等待 ${opponentPlayer.name} 落子`
-                    : `等待 ${opponentPlayer.name} 落子`
+                    ? t('game.waitingForMove', { name: opponentPlayer.name })
+                    : t('game.waitingForMove', { name: opponentPlayer.name })
               }
             </div>
           </div>
