@@ -3,6 +3,8 @@
 import React from 'react';
 import { Skill, SkillType, SKILL_LIST } from '../types/game';
 import SkillCard from './SkillCard';
+import { useI18n } from './I18nProvider';
+import { getSkillName } from '../lib/i18n';
 
 interface SkillDeckProps {
   playerEnergy: number;
@@ -12,6 +14,8 @@ interface SkillDeckProps {
 }
 
 export default function SkillDeck({ playerEnergy, isMyTurn, selectedSkill, onSkillSelect }: SkillDeckProps) {
+  const { t, locale } = useI18n();
+
   const handleSelect = (skill: Skill) => {
     if (selectedSkill?.type === skill.type) {
       onSkillSelect(null); // 取消选择
@@ -23,17 +27,17 @@ export default function SkillDeck({ playerEnergy, isMyTurn, selectedSkill, onSki
   return (
     <div className="bg-slate-900/60 rounded-xl p-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider">技能卡牌</h3>
+        <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider">{t('skill.deckTitle')}</h3>
         {selectedSkill && (
           <button
             onClick={() => onSkillSelect(null)}
             className="text-xs text-red-400 hover:text-red-300"
           >
-            取消选择
+            {t('common.cancel')}
           </button>
         )}
         {!selectedSkill && isMyTurn && (
-          <span className="text-xs text-slate-500">点击选择技能</span>
+          <span className="text-xs text-slate-500">{t('skill.clickToSelect')}</span>
         )}
       </div>
 
@@ -53,12 +57,12 @@ export default function SkillDeck({ playerEnergy, isMyTurn, selectedSkill, onSki
       {selectedSkill && (
         <div className="mt-3 p-2 rounded-lg bg-blue-900/30 border border-blue-700/50">
           <p className="text-xs text-blue-300 font-medium">
-            已选择：{selectedSkill.name}
+            {t('skill.selected', { skill: getSkillName(locale, selectedSkill.type) })}
           </p>
           <p className="text-xs text-slate-400 mt-0.5">
             {selectedSkill.requiresTarget
-              ? '请点击棋盘选择目标位置'
-              : '点击确认按钮使用技能'}
+              ? t('skill.chooseTarget')
+              : t('skill.clickConfirm')}
           </p>
           {!selectedSkill.requiresTarget && (
             <button
@@ -70,7 +74,7 @@ export default function SkillDeck({ playerEnergy, isMyTurn, selectedSkill, onSki
               }}
               className="mt-2 w-full py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg transition-colors"
             >
-              确认使用 {selectedSkill.name}
+              {t('skill.confirmUse', { skill: getSkillName(locale, selectedSkill.type) })}
             </button>
           )}
         </div>

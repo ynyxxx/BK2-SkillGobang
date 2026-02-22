@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { PlayerState } from '../types/game';
+import { useI18n } from './I18nProvider';
 
 interface EnergyBarProps {
   player: PlayerState;
@@ -10,6 +11,7 @@ interface EnergyBarProps {
 }
 
 export default function EnergyBar({ player, isCurrentTurn, isAIThinking }: EnergyBarProps) {
+  const { t } = useI18n();
   const pct = Math.round((player.energy / player.maxEnergy) * 100);
 
   const barColor = isCurrentTurn
@@ -36,7 +38,7 @@ export default function EnergyBar({ player, isCurrentTurn, isAIThinking }: Energ
               {player.name}
               {isCurrentTurn && (
                 <span className="ml-2 text-xs text-blue-400">
-                  {isAIThinking ? '思考中...' : '行动中'}
+                  {isAIThinking ? t('energy.thinking') : t('energy.acting')}
                 </span>
               )}
             </span>
