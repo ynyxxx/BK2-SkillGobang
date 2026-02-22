@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --board-size: 15;
+  --cell-size: 40px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: #0f0f1a;
+  color: #e2e8f0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* 棋盘格子样式 */
+.board-cell {
+  position: relative;
+  width: var(--cell-size);
+  height: var(--cell-size);
+  cursor: pointer;
+}
+
+.board-cell::before,
+.board-cell::after {
+  content: '';
+  position: absolute;
+  background: #2d4a7a;
+}
+
+/* 横线 */
+.board-cell::before {
+  height: 1px;
+  width: 100%;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+}
+
+/* 竖线 */
+.board-cell::after {
+  width: 1px;
+  height: 100%;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+}
+
+/* 棋子动画 */
+.piece-enter {
+  animation: piecePlace 0.2s ease-out;
+}
+
+@keyframes piecePlace {
+  0% { transform: scale(0.3); opacity: 0.5; }
+  70% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* 技能使用特效 */
+.skill-flash {
+  animation: skillFlash 0.5s ease-out;
+}
+
+@keyframes skillFlash {
+  0% { background: rgba(59, 130, 246, 0.3); }
+  100% { background: transparent; }
+}
+
+/* 能量条动画 */
+.energy-gain {
+  animation: energyGain 0.4s ease-out;
+}
+
+@keyframes energyGain {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); background: #22c55e; }
+  100% { transform: scale(1); }
+}
+
+/* 胜利高亮 */
+.winning-piece {
+  animation: winPulse 1s ease-in-out infinite;
+}
+
+@keyframes winPulse {
+  0%, 100% { box-shadow: 0 0 8px 2px rgba(251, 191, 36, 0.6); }
+  50% { box-shadow: 0 0 20px 6px rgba(251, 191, 36, 0.9); }
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}

@@ -205,16 +205,17 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 
 // 处理工具调用请求
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name, arguments: args } = request.params;
+  const { name, arguments: rawArgs } = request.params;
+  const args = (rawArgs || {}) as Record<string, unknown>;
 
   try {
     switch (name) {
       case 'gobang_recommend_move': {
         const boardState: BoardState = {
-          myPieces: args.myPieces || [],
-          opponentPieces: args.opponentPieces || [],
-          blockedPositions: args.blockedPositions || [],
-          boardSize: args.boardSize || 19,
+          myPieces: (args.myPieces as Position[]) || [],
+          opponentPieces: (args.opponentPieces as Position[]) || [],
+          blockedPositions: (args.blockedPositions as Position[]) || [],
+          boardSize: (args.boardSize as number) || 19,
         };
 
         const ai = new GobangAI(boardState.boardSize);
@@ -249,12 +250,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'gobang_evaluate_position': {
-        const position: Position = args.position;
+        const position = args.position as Position;
         const boardState: BoardState = {
-          myPieces: args.myPieces || [],
-          opponentPieces: args.opponentPieces || [],
-          blockedPositions: args.blockedPositions || [],
-          boardSize: args.boardSize || 19,
+          myPieces: (args.myPieces as Position[]) || [],
+          opponentPieces: (args.opponentPieces as Position[]) || [],
+          blockedPositions: (args.blockedPositions as Position[]) || [],
+          boardSize: (args.boardSize as number) || 19,
         };
 
         const ai = new GobangAI(boardState.boardSize);
@@ -279,12 +280,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'gobang_get_top_moves': {
         const boardState: BoardState = {
-          myPieces: args.myPieces || [],
-          opponentPieces: args.opponentPieces || [],
-          blockedPositions: args.blockedPositions || [],
-          boardSize: args.boardSize || 19,
+          myPieces: (args.myPieces as Position[]) || [],
+          opponentPieces: (args.opponentPieces as Position[]) || [],
+          blockedPositions: (args.blockedPositions as Position[]) || [],
+          boardSize: (args.boardSize as number) || 19,
         };
-        const topN = args.topN || 5;
+        const topN = (args.topN as number) || 5;
 
         const ai = new GobangAI(boardState.boardSize);
         // 需要扩展AI类来返回top N的moves
