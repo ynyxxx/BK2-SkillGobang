@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { PlayerState } from '../types/game';
+import { useLang } from './LangContext';
 
 interface EnergyBarProps {
   player: PlayerState;
@@ -10,6 +11,7 @@ interface EnergyBarProps {
 }
 
 export default function EnergyBar({ player, isCurrentTurn, isAIThinking }: EnergyBarProps) {
+  const { t } = useLang();
   const pct = Math.round((player.energy / player.maxEnergy) * 100);
 
   const barColor = isCurrentTurn
@@ -19,15 +21,9 @@ export default function EnergyBar({ player, isCurrentTurn, isAIThinking }: Energ
   return (
     <div className={`rounded-xl p-3 transition-all duration-300 ${isCurrentTurn ? 'ring-2 ring-blue-400 bg-slate-800/80' : 'bg-slate-900/60'}`}>
       <div className="flex items-center gap-3">
-        {/* 棋子颜色标识 */}
         <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center shrink-0
-          ${player.color === 'black'
-            ? 'bg-slate-900 border-slate-400'
-            : 'bg-white border-amber-300'
-          }`}>
-          {player.isAI && (
-            <span className="text-xs">🤖</span>
-          )}
+          ${player.color === 'black' ? 'bg-slate-900 border-slate-400' : 'bg-white border-amber-300'}`}>
+          {player.isAI && <span className="text-xs">🤖</span>}
         </div>
 
         <div className="flex-1 min-w-0">
@@ -36,7 +32,7 @@ export default function EnergyBar({ player, isCurrentTurn, isAIThinking }: Energ
               {player.name}
               {isCurrentTurn && (
                 <span className="ml-2 text-xs text-blue-400">
-                  {isAIThinking ? '思考中...' : '行动中'}
+                  {isAIThinking ? t.thinking : t.acting}
                 </span>
               )}
             </span>
@@ -45,7 +41,6 @@ export default function EnergyBar({ player, isCurrentTurn, isAIThinking }: Energ
             </span>
           </div>
 
-          {/* 能量条 */}
           <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-500 ${barColor}`}
@@ -53,7 +48,6 @@ export default function EnergyBar({ player, isCurrentTurn, isAIThinking }: Energ
             />
           </div>
 
-          {/* 能量点显示 */}
           <div className="flex gap-1 mt-1.5 flex-wrap">
             {Array.from({ length: player.maxEnergy }, (_, i) => (
               <div

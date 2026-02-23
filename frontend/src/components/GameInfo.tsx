@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { GameState, GameMove, SkillType } from '../types/game';
+import { useLang } from './LangContext';
 
 interface GameInfoProps {
   gameState: GameState;
@@ -12,15 +13,6 @@ interface GameInfoProps {
   onResign: () => void;
 }
 
-const SKILL_NAMES: Record<SkillType, string> = {
-  [SkillType.DUST_AND_STONE]: '飞沙走石',
-  [SkillType.UPROOT_MOUNT]: '力拔山兮',
-  [SkillType.POLARITY_REVERSAL]: '两极反转',
-  [SkillType.STILL_AS_POND]: '水静如镜',
-  [SkillType.TEMPO_SPLIT]: '节拍分裂',
-  [SkillType.SENTINEL_WARD]: '哨兵结界',
-};
-
 export default function GameInfo({
   gameState,
   isAIThinking,
@@ -29,21 +21,22 @@ export default function GameInfo({
   playerColor,
   onResign,
 }: GameInfoProps) {
+  const { t } = useLang();
   const isMyTurn = gameState.currentTurn === playerColor;
   const currentPlayer = gameState.players[gameState.currentTurn];
   const isFinished = gameState.status === 'finished';
 
   const getStatusText = () => {
     if (isFinished) {
-      if (gameState.winner === 'draw') return '平局！';
+      if (gameState.winner === 'draw') return t.draw;
       const winnerName = gameState.winner ? gameState.players[gameState.winner].name : '';
-      return `${winnerName} 获胜！`;
+      return t.wins(winnerName);
     }
-    if (isAIThinking) return `${currentPlayer.name} 思考中...`;
+    if (isAIThinking) return t.aiThinkingStatus(currentPlayer.name);
     if (gameState.skippedTurns[gameState.currentTurn] > 0) {
-      return `${currentPlayer.name} 的回合被跳过`;
+      return t.turnSkipped(currentPlayer.name);
     }
-    return isMyTurn ? '你的回合' : `${currentPlayer.name} 的回合`;
+    return isMyTurn ? t.myTurn : t.opponentTurn(currentPlayer.name);
   };
 
   const recentMoves = [...gameState.moveHistory].reverse().slice(0, 8);
@@ -65,10 +58,10 @@ export default function GameInfo({
           <p className="text-xs text-slate-400 mt-0.5">{gameState.winReason}</p>
         )}
         {isFinished && !gameState.winReason && (
-          <p className="text-xs text-slate-400">第 {gameState.turnNumber} 回合</p>
+          <p className="text-xs text-slate-400">{t.round(gameState.turnNumber)}</p>
         )}
         {!isFinished && (
-          <p className="text-xs text-slate-500 mt-0.5">第 {gameState.turnNumber} 回合</p>
+          <p className="text-xs text-slate-500 mt-0.5">{t.round(gameState.turnNumber)}</p>
         )}
       </div>
 
@@ -90,17 +83,17 @@ export default function GameInfo({
       {!isFinished && gameState.skippedTurns[gameState.currentTurn === 'black' ? 'white' : 'black'] > 0 && (
         <div className="rounded-lg p-2 bg-amber-900/30 border border-amber-700/50">
           <p className="text-xs text-amber-300">
-            ⏸ 对手还将跳过 {gameState.skippedTurns[gameState.currentTurn === 'black' ? 'white' : 'black']} 个回合
+            {t.opponentSkip(gameState.skippedTurns[gameState.currentTurn === 'black' ? 'white' : 'black'])}
           </p>
         </div>
       )}
 
       {/* 对局记录 */}
       <div className="bg-slate-900/60 rounded-xl p-3">
-        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">对局记录</h3>
+        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">{t.moveHistory}</h3>
         <div className="space-y-1 max-h-48 overflow-y-auto">
           {recentMoves.length === 0 ? (
-            <p className="text-xs text-slate-600 text-center py-2">暂无记录</p>
+            <p className="text-xs text-slate-600 text-center py-2">{t.noHistory}</p>
           ) : (
             recentMoves.map((move, i) => (
               <MoveEntry key={i} move={move} />
@@ -115,7 +108,7 @@ export default function GameInfo({
           onClick={onResign}
           className="w-full py-2 rounded-lg bg-red-900/30 border border-red-700/50 text-red-400 text-sm hover:bg-red-900/50 transition-colors"
         >
-          认输
+          {t.resign}
         </button>
       )}
     </div>
@@ -123,6 +116,7 @@ export default function GameInfo({
 }
 
 function MoveEntry({ move }: { move: GameMove }) {
+  const { t } = useLang();
   const color = move.player === 'black' ? '●' : '○';
   const colorClass = move.player === 'black' ? 'text-slate-300' : 'text-amber-300';
 
@@ -130,23 +124,22 @@ function MoveEntry({ move }: { move: GameMove }) {
     return (
       <div className="flex items-center gap-1.5 text-xs text-slate-500">
         <span className={colorClass}>{color}</span>
-        <span>回合{move.turn}:</span>
+        <span>{t.round(move.turn)}:</span>
         <span className="text-slate-400">
-          落子 ({String.fromCharCode(65 + move.position.x)}{15 - move.position.y})
+          {t.placeAt(String.fromCharCode(65 + move.position.x), 15 - move.position.y)}
         </span>
       </div>
     );
   }
 
   if (move.type === 'skill' && move.skill) {
+    const skillName = t.skills[move.skill.type]?.name ?? move.skill.type;
     return (
       <div className="flex items-start gap-1.5 text-xs">
         <span className={`shrink-0 ${colorClass}`}>{color}</span>
         <div>
-          <span className="text-slate-500">回合{move.turn}: </span>
-          <span className="text-purple-400">
-            使用 {SKILL_NAMES[move.skill.type] || move.skill.type}
-          </span>
+          <span className="text-slate-500">{t.round(move.turn)}: </span>
+          <span className="text-purple-400">{t.useSkillLabel} {skillName}</span>
           {move.skill.outcome && (
             <div className="text-slate-500 text-[10px] leading-tight mt-0.5">{move.skill.outcome}</div>
           )}

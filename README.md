@@ -9,18 +9,18 @@ Standard 5-in-a-row Gobang rules apply, plus:
 - **Energy System**: Gain 1 energy per turn. Form a 3-in-a-row to gain a bonus energy. Max 10 energy.
 - **Skills**: Spend energy to use a special skill instead of placing a stone. Skills can shift the board dramatically.
 - **AI Opponent**: Backed by a hybrid GobangAI solver + LLM that can reason about skills.
+- **Bilingual UI**: Switch between Chinese (中文) and English in the top corner of any page.
 
 ### Skills
 
-| Skill | Cost | Effect |
-|-------|------|--------|
-| 烟尘飞石 Dust & Stone | 3 | Remove a targeted opponent's stone |
-| 拔山举鼎 Uproot Mount | 5 | 70% chance to remove 2 opponent stones; 30% backfires (remove your own) |
-| 阴阳颠倒 Polarity Reversal | 8 | Swap all black/white stones on the board |
-| 静如止水 Still as Pond | 6 | Skip opponent's next 2 turns |
-| 相变穿越 Phase Shift | 1 | Remove any adjacent stone (cost reduces to 0 if targeting opponent) |
-| 分身夺势 Tempo Split | 2 | Place 2 stones this turn, but skip your next turn |
-| 守望哨兵 Sentinel Ward | 3 | Block a cell permanently — neither player can place there |
+| Skill (CN) | Skill (EN) | Cost | Effect |
+|------------|-----------|------|--------|
+| 飞沙走石 | Dust & Stone | 3 | Remove a targeted opponent stone. That cell is blocked for the next turn. |
+| 力拔山兮 | Uproot Mount | 5 | 50% win instantly; 30% gain an extra turn; 20% nothing happens |
+| 两极反转 | Polarity Reversal | 8 | Skip your next turn, then swap all black/white stones on the board |
+| 水静如镜 | Still as Pond | 6 | Force the opponent to skip their next 2 turns |
+| 节拍分裂 | Tempo Split | 5 | Place 2 stones this turn, but skip your next turn |
+| 哨兵结界 | Sentinel Ward | 3 | Block a chosen empty cell for 1 turn — opponent cannot place there |
 
 ## Project Structure
 
@@ -43,19 +43,17 @@ BK2-SkillGobang/
 │   │   │   └── aiOpponent.ts         # Hybrid AI decision maker
 │   │   ├── mcp/          # MCP server for Claude Desktop integration
 │   │   └── server.ts     # Express + Socket.IO server
-│   ├── .env              # Environment configuration (edit this)
+│   ├── .env              # Environment configuration (edit this, never commit)
+│   ├── .env.example      # Template for .env
 │   └── package.json
 ├── frontend/
 │   ├── src/
 │   │   ├── app/          # Next.js app router pages
-│   │   ├── components/   # Board, SkillDeck, EnergyBar, GameInfo
+│   │   ├── components/   # Board, SkillDeck, EnergyBar, GameInfo, LangContext
 │   │   ├── hooks/        # useGame (Socket.IO state management)
-│   │   ├── lib/          # Socket.IO client singleton
+│   │   ├── lib/          # Socket.IO client singleton, i18n translations
 │   │   └── types/        # Frontend type definitions
-│   ├── .env.local        # Frontend environment configuration
 │   └── package.json
-├── scripts/
-│   └── setup-mcp.md      # Guide for Claude Desktop MCP integration
 └── package.json          # Root scripts (dev, install:all)
 ```
 
@@ -76,29 +74,40 @@ This installs dependencies for both backend and frontend.
 
 ### 2. Configure Environment
 
-Edit `backend/.env` to set your AI provider:
+Copy the template and add your API keys:
+
+```bash
+cp backend/.env.example backend/.env
+```
+
+Edit `backend/.env`:
 
 ```env
-# Choose default AI provider: gobang-only | openai | claude | deepseek | ollama
+# Choose a default AI provider: gobang-only | openai | claude | deepseek | dashscope | ollama
 DEFAULT_AI_PROVIDER=gobang-only
 
 # OpenAI
 OPENAI_API_KEY=sk-...
 OPENAI_MODEL=gpt-4o-mini
 
-# Anthropic Claude
-CLAUDE_API_KEY=sk-ant-...
+# Anthropic Claude (either key name works)
+ANTHROPIC_API_KEY=sk-ant-...
 CLAUDE_MODEL=claude-haiku-4-5-20251001
 
 # DeepSeek (OpenAI-compatible)
 DEEPSEEK_API_KEY=sk-...
+DEEPSEEK_MODEL=deepseek-chat
+
+# Alibaba DashScope / Qwen (OpenAI-compatible)
+DASHSCOPE_API_KEY=sk-...
+DASHSCOPE_MODEL=qwen-plus
 
 # Ollama (local, no key needed)
 OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL=qwen2:7b
 ```
 
-You can leave API keys blank. Any provider without a valid key will not be registered. `gobang-only` mode (the default) uses only the built-in solver without any LLM calls.
+You can leave API keys blank. Any provider without a key is simply not registered. `gobang-only` mode (the default) uses only the built-in solver without any LLM calls.
 
 ### 3. Start Development Servers
 
@@ -122,8 +131,8 @@ npm run dev:frontend  # frontend only
 Open `http://localhost:3000` in your browser.
 
 - **PvP**: Two human players take turns in the same browser tab
-- **PvA**: Human (black) vs AI (white) — AI uses the configured LLM provider
-- **AvA**: Watch two AI instances play each other
+- **PvA**: Human (black) vs AI (white) — select the AI provider from the dropdown
+- **AvA**: Watch two AI instances play each other — each side can use a **different** AI provider
 
 ## AI Providers
 
@@ -135,12 +144,13 @@ The AI opponent uses a hybrid approach:
 | Provider | Key | Description |
 |----------|-----|-------------|
 | `gobang-only` | none | Pure solver, no LLM calls. Fast and deterministic. |
-| `openai` | `OPENAI_API_KEY` | GPT-4o-mini (or any OpenAI model) |
-| `claude` | `CLAUDE_API_KEY` | Claude Haiku (or any Claude model) |
+| `openai` | `OPENAI_API_KEY` | GPT-4o-mini (or any OpenAI model via `OPENAI_MODEL`) |
+| `claude` | `ANTHROPIC_API_KEY` | Claude Haiku (or any Claude model via `CLAUDE_MODEL`) |
 | `deepseek` | `DEEPSEEK_API_KEY` | DeepSeek models via their OpenAI-compatible API |
+| `dashscope` | `DASHSCOPE_API_KEY` | Alibaba Cloud Qwen models (OpenAI-compatible endpoint) |
 | `ollama` | none | Local models via Ollama (e.g., qwen2:7b, llama3) |
 
-You can also override the AI provider per game from the home page UI.
+In **AvA** mode, you can assign different providers to black and white independently from the home page UI.
 
 ## MCP Integration (Claude Desktop)
 
@@ -150,8 +160,6 @@ The backend includes an MCP server that exposes the Gobang AI to Claude Desktop:
 - `gobang_evaluate_position` — evaluates a specific position's score
 - `gobang_get_top_moves` — returns the top N candidate moves
 
-See `scripts/setup-mcp.md` for setup instructions.
-
 To run the MCP server directly:
 ```bash
 cd backend && npm run mcp
@@ -159,12 +167,10 @@ cd backend && npm run mcp
 
 ## REST API
 
-The backend exposes a REST API alongside Socket.IO:
-
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/health` | Health check |
-| GET | `/api/ai/providers` | List registered AI providers |
+| GET | `/api/ai/providers` | List registered AI providers and availability |
 | POST | `/api/games` | Create a new game |
 | GET | `/api/games/:id` | Get game state |
 | POST | `/api/games/:id/start` | Start a game |
@@ -173,10 +179,15 @@ The backend exposes a REST API alongside Socket.IO:
 ### Create Game Example
 
 ```bash
-# PvA game using OpenAI
+# PvA game using Claude
 curl -X POST http://localhost:3001/api/games \
   -H "Content-Type: application/json" \
-  -d '{"mode":"pva","playerName":"Alice","aiConfig":{"whiteAI":{"provider":"openai"}}}'
+  -d '{"mode":"pva","playerName":"Alice","aiConfig":{"whiteAI":{"provider":"claude"}}}'
+
+# AvA game: black uses DeepSeek, white uses Qwen
+curl -X POST http://localhost:3001/api/games \
+  -H "Content-Type: application/json" \
+  -d '{"mode":"ava","aiConfig":{"blackAI":{"provider":"deepseek"},"whiteAI":{"provider":"dashscope"}}}'
 ```
 
 ## Socket.IO Events
@@ -196,10 +207,11 @@ curl -X POST http://localhost:3001/api/games \
 | Event | Payload | Description |
 |-------|---------|-------------|
 | `game:state` | `GameState` | Full game state update |
-| `game:move` | `{position, player, ...}` | A move was made |
-| `game:skill_used` | `{skillType, player, result}` | A skill was used |
-| `game:end` | `{winner, reason}` | Game over |
+| `game:move` | `{move, state}` | A stone was placed |
+| `game:skill` | `{move, state, outcome}` | A skill was used |
+| `game:end` | `{winner, reason, state}` | Game over |
 | `game:error` | `string` | Error message |
+| `ai:thinking` | `'black' \| 'white'` | AI turn started |
 
 ## Tech Stack
 

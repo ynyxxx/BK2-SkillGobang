@@ -7,13 +7,14 @@ import SkillDeck from '../../../components/SkillDeck';
 import EnergyBar from '../../../components/EnergyBar';
 import GameInfo from '../../../components/GameInfo';
 import { useGame } from '../../../hooks/useGame';
+import { useLang, LangToggle } from '../../../components/LangContext';
 import { Skill, SkillType, Position, PieceType } from '../../../types/game';
 
 export default function GamePage() {
   const params = useParams();
   const searchParams = useSearchParams();
+  const { t } = useLang();
   const gameId = params.id as string;
-  // 固定颜色：PvA/AvA 时从 URL 读取，PvP 时动态跟随当前回合
   const urlColor = (searchParams.get('color') || 'black') as 'black' | 'white';
 
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
@@ -28,12 +29,10 @@ export default function GamePage() {
     actions,
   } = useGame({ gameId, playerColor: urlColor });
 
-  // PvP 模式下，始终操控当前回合的玩家
   const isPvP = gameState?.mode === 'pvp';
   const isAvA = gameState?.mode === 'ava';
   const activeColor = isPvP ? (gameState?.currentTurn ?? urlColor) : urlColor;
 
-  // 监听技能确认事件（无需目标的技能）
   useEffect(() => {
     const handler = (e: Event) => {
       const skill = (e as CustomEvent<Skill>).detail;
@@ -50,8 +49,6 @@ export default function GamePage() {
 
   const handleSkillTarget = useCallback((pos: Position) => {
     if (!selectedSkill || !gameState) return;
-
-    // 验证目标（基于当前活跃玩家）
     if (selectedSkill.targetType === 'opponent_piece') {
       const opponentType = activeColor === 'black' ? PieceType.WHITE : PieceType.BLACK;
       if (gameState.board[pos.y]?.[pos.x] !== opponentType) return;
@@ -59,7 +56,6 @@ export default function GamePage() {
     if (selectedSkill.targetType === 'empty_cell') {
       if (gameState.board[pos.y]?.[pos.x] !== PieceType.EMPTY) return;
     }
-
     actions.useSkill(selectedSkill.type, pos);
     setSelectedSkill(null);
   }, [selectedSkill, gameState, activeColor, actions]);
@@ -75,7 +71,7 @@ export default function GamePage() {
         <div className="text-center space-y-4">
           <div className="w-12 h-12 rounded-full border-2 border-blue-400 border-t-transparent animate-spin mx-auto" />
           <p className="text-slate-400">
-            {isConnected ? '加载游戏中...' : '连接服务器中...'}
+            {isConnected ? t.loadingGame : t.connectingServer}
           </p>
         </div>
       </div>
@@ -85,7 +81,6 @@ export default function GamePage() {
   const myPlayer = gameState.players[activeColor];
   const opponentColor = activeColor === 'black' ? 'white' : 'black';
   const opponentPlayer = gameState.players[opponentColor];
-  // AvA 观战模式不可操作；PvP 始终可操作；PvA 仅己方回合可操作
   const isMyTurn = !isAvA && gameState.status === 'playing' &&
     (isPvP || (gameState.currentTurn === urlColor && !isAIThinking));
   const lastMovePos = lastMove?.position || null;
@@ -95,26 +90,28 @@ export default function GamePage() {
       {/* 顶部导航 */}
       <header className="flex items-center justify-between px-4 py-3 border-b border-slate-800/50 bg-slate-900/50 backdrop-blur">
         <div className="flex items-center gap-3">
-          <a href="/" className="text-slate-400 hover:text-slate-200 text-sm">← 首页</a>
+          <a href="/" className="text-slate-400 hover:text-slate-200 text-sm">←</a>
           <span className="text-slate-700">|</span>
           <span className="text-xs text-slate-500 font-mono uppercase">
-            {gameState.mode === 'pvp' ? '人人对战' : gameState.mode === 'pva' ? '人机对战' : '机机对战'}
+            {t.modeLabels[gameState.mode]}
           </span>
-          {/* PvP 模式显示当前操作方 */}
           {isPvP && gameState.status === 'playing' && (
             <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
               gameState.currentTurn === 'black'
                 ? 'bg-slate-700 text-slate-200'
                 : 'bg-white/10 text-white'
             }`}>
-              {gameState.players[gameState.currentTurn].name} 的回合
+              {gameState.players[gameState.currentTurn].name}
             </span>
           )}
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-red-400'}`} />
-          <span className="text-xs text-slate-500">{isConnected ? '已连接' : '连接中...'}</span>
+        <div className="flex items-center gap-3">
+          <LangToggle />
+          <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-red-400'}`} />
+            <span className="text-xs text-slate-500">{isConnected ? t.connected : t.disconnected}</span>
+          </div>
         </div>
       </header>
 
@@ -123,14 +120,11 @@ export default function GamePage() {
 
         {/* 左侧：玩家信息 + 游戏状态 */}
         <div className="lg:w-64 xl:w-72 space-y-3 order-2 lg:order-1">
-          {/* 对手信息 */}
           <EnergyBar
             player={opponentPlayer}
             isCurrentTurn={gameState.currentTurn === opponentColor}
             isAIThinking={isAIThinking && gameState.currentTurn === opponentColor}
           />
-
-          {/* 游戏信息 */}
           <GameInfo
             gameState={gameState}
             isAIThinking={isAIThinking}
@@ -139,8 +133,6 @@ export default function GamePage() {
             playerColor={activeColor}
             onResign={actions.resign}
           />
-
-          {/* 己方信息 */}
           <EnergyBar
             player={myPlayer}
             isCurrentTurn={gameState.currentTurn === activeColor}
@@ -151,19 +143,21 @@ export default function GamePage() {
         {/* 中间：棋盘 */}
         <div className="flex-1 flex items-center justify-center order-1 lg:order-2">
           <div className="space-y-3 w-full flex flex-col items-center">
-            {/* AI思考提示 */}
             {isAIThinking && (
               <div className="flex items-center gap-2 text-sm text-blue-300 bg-blue-900/20 px-4 py-2 rounded-lg border border-blue-700/30">
                 <div className="w-4 h-4 rounded-full border-2 border-blue-400 border-t-transparent animate-spin" />
-                AI 正在思考...
+                {t.aiThinkingBanner}
               </div>
             )}
 
-            {/* 技能选择提示 */}
             {selectedSkill && (
               <div className="flex items-center gap-2 text-sm text-purple-300 bg-purple-900/20 px-4 py-2 rounded-lg border border-purple-700/30 animate-fade-in">
                 <span>⚡</span>
-                <span>已选择 <strong>{selectedSkill.name}</strong> — {selectedSkill.requiresTarget ? '点击棋盘选择目标' : '点击确认使用'}</span>
+                <span>
+                  {t.selectedSkillLabel(t.skills[selectedSkill.type]?.name ?? selectedSkill.name)}
+                  {' — '}
+                  {selectedSkill.requiresTarget ? t.skillTargetHint : t.clickConfirm}
+                </span>
                 <button onClick={() => setSelectedSkill(null)} className="ml-auto text-slate-400 hover:text-white">✕</button>
               </div>
             )}
@@ -177,26 +171,23 @@ export default function GamePage() {
               lastMove={lastMovePos}
             />
 
-            {/* 轮次提示 */}
             <div className="text-xs text-slate-500 text-center">
               {isMyTurn
                 ? selectedSkill
-                  ? selectedSkill.requiresTarget ? '点击棋盘上的目标位置' : ''
+                  ? selectedSkill.requiresTarget ? t.skillTargetHint : ''
                   : isPvP
-                    ? `${myPlayer.name} 落子，或在右侧选择技能`
-                    : '点击棋盘落子，或在右侧选择技能'
+                    ? t.pvpTurnHint(myPlayer.name)
+                    : t.myTurnHint
                 : isAIThinking
-                  ? 'AI 正在分析棋局...'
-                  : isPvP
-                    ? `等待 ${opponentPlayer.name} 落子`
-                    : `等待 ${opponentPlayer.name} 落子`
+                  ? t.aiAnalyzing
+                  : t.waitingFor(opponentPlayer.name)
               }
             </div>
           </div>
         </div>
 
         {/* 右侧：技能面板 */}
-        {(gameState.mode !== 'ava') && (
+        {gameState.mode !== 'ava' && (
           <div className="lg:w-64 xl:w-72 order-3">
             <SkillDeck
               playerEnergy={myPlayer.energy}
